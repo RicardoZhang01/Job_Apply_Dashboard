@@ -6,7 +6,15 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { APPLICATION_STATUSES, PRIORITIES, SOURCE_CHANNELS } from '../../common/constants';
+import {
+  APPLICATION_STATUSES,
+  EMPLOYMENT_TYPES,
+  FAILURE_TAGS,
+  JOB_CATEGORIES,
+  MATERIALS_LOCALES,
+  PRIORITIES,
+  SOURCE_CHANNELS,
+} from '../../common/constants';
 
 export class CreateApplicationDto {
   @IsString()
@@ -49,6 +57,10 @@ export class CreateApplicationDto {
 
   @IsOptional()
   @IsDateString()
+  writtenTestAt?: string;
+
+  @IsOptional()
+  @IsDateString()
   nextInterviewAt?: string;
 
   @IsOptional()
@@ -70,4 +82,48 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  jdSummary?: string;
+
+  @IsOptional()
+  @IsString()
+  companyNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  interviewPrepNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  hrNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  resumeVersionLabel?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...MATERIALS_LOCALES])
+  materialsLocale?: string;
+
+  @IsOptional()
+  @IsString()
+  resumeTailoredNote?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...JOB_CATEGORIES])
+  jobCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...EMPLOYMENT_TYPES])
+  employmentType?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...FAILURE_TAGS])
+  failureTag?: string;
 }

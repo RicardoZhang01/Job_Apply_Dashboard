@@ -20,6 +20,7 @@ import {
 } from "@/lib/constants";
 import type { Application } from "@/lib/types";
 import { deadlineBadge } from "@/lib/format";
+import { suggestNextAction } from "@/lib/next-action";
 
 function Column({
   status,
@@ -44,6 +45,15 @@ function Column({
   );
 }
 
+function materialsSubmittedCount(app: Application): number {
+  return [
+    app.resumeSubmitted,
+    app.coverLetterSubmitted,
+    app.portfolioSubmitted,
+    app.transcriptSubmitted,
+  ].filter(Boolean).length;
+}
+
 function Card({ app }: { app: Application }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: app.id });
@@ -53,6 +63,8 @@ function Card({ app }: { app: Application }) {
     : undefined;
 
   const badge = deadlineBadge(app.deadlineAt);
+  const mat = materialsSubmittedCount(app);
+  const nextHint = suggestNextAction(app);
 
   return (
     <div
@@ -87,6 +99,13 @@ function Card({ app }: { app: Application }) {
         </div>
         <div className="mt-1 text-xs text-slate-500">
           截止：{app.deadlineAt ? new Date(app.deadlineAt).toLocaleDateString("zh-CN") : "—"}
+        </div>
+        <div className="mt-1 text-xs text-slate-600">
+          材料：{mat}/4 已标记提交
+        </div>
+        <div className="mt-2 border-t border-slate-100 pt-2 text-xs leading-snug text-indigo-900/90">
+          <span className="font-medium text-indigo-700">下一步：</span>
+          {nextHint}
         </div>
       </div>
     </div>

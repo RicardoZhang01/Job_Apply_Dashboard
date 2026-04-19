@@ -10,15 +10,26 @@ export type Application = {
   priority: string;
   deadlineAt: string | null;
   appliedAt: string | null;
+  writtenTestAt: string | null;
   nextInterviewAt: string | null;
   resumeSubmitted: boolean;
   coverLetterSubmitted: boolean;
   portfolioSubmitted: boolean;
   transcriptSubmitted: boolean;
   notes: string | null;
+  jdSummary: string | null;
+  companyNotes: string | null;
+  interviewPrepNotes: string | null;
+  hrNotes: string | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
+  resumeVersionLabel: string | null;
+  materialsLocale: string | null;
+  resumeTailoredNote: string | null;
+  jobCategory: string | null;
+  employmentType: string | null;
+  failureTag: string | null;
 };
 
 export type OverviewStats = {
@@ -32,6 +43,15 @@ export type OverviewStats = {
   todoCount: number;
   appliedCount: number;
   interviewingCount: number;
+};
+
+export type DashboardTodoItem = {
+  todoKey: string;
+  applicationId: string;
+  title: string;
+  kind: string;
+  companyName: string;
+  roleName: string;
 };
 
 export type ReminderItem = {

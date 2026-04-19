@@ -10,6 +10,7 @@ const links = [
   { href: "/dashboard", label: "仪表盘" },
   { href: "/board", label: "看板" },
   { href: "/list", label: "列表" },
+  { href: "/reminders", label: "提醒" },
   { href: "/stats", label: "统计" },
 ];
 
@@ -48,6 +49,12 @@ export function AppNav() {
           </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">
+          <Link
+            href="/applications/new/quick"
+            className="rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-indigo-700 hover:bg-indigo-50"
+          >
+            极简新建
+          </Link>
           <Link
             href="/applications/new"
             className="rounded-md bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700"

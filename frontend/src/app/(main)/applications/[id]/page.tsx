@@ -5,18 +5,22 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { CHANNEL_LABELS, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/constants";
+import {
+  CHANNEL_LABELS,
+  EMPLOYMENT_TYPE_LABELS,
+  FAILURE_TAG_LABELS,
+  JOB_CATEGORY_LABELS,
+  MATERIALS_LOCALE_LABELS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+} from "@/lib/constants";
 import type { Application } from "@/lib/types";
 import { formatDt } from "@/lib/format";
-
-type HistoryRow = {
-  id: string;
-  fromStatus: string | null;
-  toStatus: string | null;
-  actionType: string;
-  content: string | null;
-  createdAt: string;
-};
+import { suggestNextAction } from "@/lib/next-action";
+import {
+  ApplicationTimeline,
+  type HistoryRow,
+} from "@/components/ApplicationTimeline";
 
 export default function ApplicationDetailPage() {
   const params = useParams();
@@ -51,6 +55,8 @@ export default function ApplicationDetailPage() {
     mutationFn: () => api(`/applications/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["applications"] });
+      void qc.invalidateQueries({ queryKey: ["stats"] });
+      void qc.invalidateQueries({ queryKey: ["dashboard", "todos"] });
       router.push("/list");
     },
   });
@@ -83,6 +89,11 @@ export default function ApplicationDetailPage() {
             删除
           </button>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
+        <span className="font-semibold text-indigo-800">下一步建议：</span>
+        {suggestNextAction(app)}
       </div>
 
       <section className="grid gap-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2">
@@ -126,6 +137,31 @@ export default function ApplicationDetailPage() {
                 )}
               </dd>
             </div>
+            <div>
+              <dt className="text-slate-500">岗位大类</dt>
+              <dd>
+                {app.jobCategory
+                  ? JOB_CATEGORY_LABELS[app.jobCategory] ?? app.jobCategory
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">招聘类型</dt>
+              <dd>
+                {app.employmentType
+                  ? EMPLOYMENT_TYPE_LABELS[app.employmentType] ??
+                    app.employmentType
+                  : "—"}
+              </dd>
+            </div>
+            {app.failureTag && (
+              <div>
+                <dt className="text-slate-500">结束/未通过原因</dt>
+                <dd>
+                  {FAILURE_TAG_LABELS[app.failureTag] ?? app.failureTag}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
         <div>
@@ -138,6 +174,10 @@ export default function ApplicationDetailPage() {
             <div>
               <dt className="text-slate-500">投递时间</dt>
               <dd>{formatDt(app.appliedAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">笔试时间</dt>
+              <dd>{formatDt(app.writtenTestAt)}</dd>
             </div>
             <div>
               <dt className="text-slate-500">下一场面试</dt>
@@ -159,14 +199,86 @@ export default function ApplicationDetailPage() {
           <li>作品集：{app.portfolioSubmitted ? "已提交" : "未提交"}</li>
           <li>成绩单：{app.transcriptSubmitted ? "已提交" : "未提交"}</li>
         </ul>
+        {(app.resumeVersionLabel ||
+          app.materialsLocale ||
+          app.resumeTailoredNote) && (
+          <dl className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-sm">
+            {app.resumeVersionLabel && (
+              <div>
+                <dt className="text-slate-500">简历版本</dt>
+                <dd>{app.resumeVersionLabel}</dd>
+              </div>
+            )}
+            {app.materialsLocale && (
+              <div>
+                <dt className="text-slate-500">材料语言侧重</dt>
+                <dd>
+                  {MATERIALS_LOCALE_LABELS[app.materialsLocale] ??
+                    app.materialsLocale}
+                </dd>
+              </div>
+            )}
+            {app.resumeTailoredNote && (
+              <div>
+                <dt className="text-slate-500">岗位定制说明</dt>
+                <dd className="whitespace-pre-wrap">{app.resumeTailoredNote}</dd>
+              </div>
+            )}
+          </dl>
+        )}
       </section>
 
-      {app.notes && (
+      <ApplicationTimeline app={app} history={history} />
+
+      {(app.jdSummary ||
+        app.companyNotes ||
+        app.interviewPrepNotes ||
+        app.hrNotes ||
+        app.notes) && (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">备注</h2>
-          <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">
-            {app.notes}
-          </p>
+          <dl className="mt-4 space-y-4 text-sm">
+            {app.jdSummary && (
+              <div>
+                <dt className="font-medium text-slate-700">JD 摘要</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-700">
+                  {app.jdSummary}
+                </dd>
+              </div>
+            )}
+            {app.companyNotes && (
+              <div>
+                <dt className="font-medium text-slate-700">公司与业务</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-700">
+                  {app.companyNotes}
+                </dd>
+              </div>
+            )}
+            {app.interviewPrepNotes && (
+              <div>
+                <dt className="font-medium text-slate-700">面试准备</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-700">
+                  {app.interviewPrepNotes}
+                </dd>
+              </div>
+            )}
+            {app.hrNotes && (
+              <div>
+                <dt className="font-medium text-slate-700">HR / 沟通</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-700">
+                  {app.hrNotes}
+                </dd>
+              </div>
+            )}
+            {app.notes && (
+              <div>
+                <dt className="font-medium text-slate-700">自由备注</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-700">
+                  {app.notes}
+                </dd>
+              </div>
+            )}
+          </dl>
         </section>
       )}
 

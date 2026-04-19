@@ -2,6 +2,15 @@
 
 面向大学生求职场景的 Web 平台：看板拖拽、列表筛选、截止日期与面试提醒、统计分析。
 
+**当前能力摘要**
+
+- **总览**：关键指标、**今日待办**（截止/今日笔面试/材料与跟进等聚合）、**分组提醒**、最近更新、快捷入口；**提醒中心** [`/reminders`](frontend/src/app/(main)/reminders/page.tsx)。
+- **执行**：看板 **搜索/筛选**、卡片 **材料 x/4** 与 **规则化「下一步」** 提示；**极简新建** [`/applications/new/quick`](frontend/src/app/(main)/applications/new/quick/page.tsx) 与完整新建；申请详情含 **申请时间线**（关键日期 + 历史记录）。
+- **字段**：笔试时间；结构化备注（JD / 公司 / 面试准备 / HR / 自由备注）；材料轻量版本（简历版本名、语言侧重、定制说明）；复盘维度（岗位大类、招聘类型、结束/失败原因标签）。
+- **复盘**：统计分析含渠道分布、**渠道进面/Offer 率**、**岗位大类复盘**、**失败原因分布**、漏斗与趋势等。
+
+产品口径见仓库内 PRD、`求职申请管理看板_补充痛点与功能结构优化建议.md`、`AI产品经理_职位说明_重建版.md` 等文档。
+
 ## 一键启动（推荐）
 
 **需要先安装 [Node.js](https://nodejs.org/)（建议 LTS）。**
@@ -50,19 +59,40 @@
 
 | 命令 | 说明 |
 |------|------|
-| `backend/npm run build` | 编译后端 |
-| `backend/npm test` | 单元测试 |
-| `backend/npm run test:e2e` | E2E |
-| `frontend/npm run build` | 前端生产构建 |
+| 在 `backend/`：`npm run build` | 编译后端 |
+| 在 `backend/`：`npm test` | 单元测试 |
+| 在 `backend/`：`npm run test:e2e` | E2E |
+| 在 `frontend/`：`npm run build` | 前端生产构建 |
 
 ## CI
 
 推送至 `main/master` 或提交 PR 时运行 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)。
 
+## 主要页面路由（前端）
+
+| 路径 | 说明 |
+|------|------|
+| `/` | 登录态检测后跳转仪表盘或登录页 |
+| `/dashboard` | 首页仪表盘 |
+| `/board` | 看板 |
+| `/list` | 申请列表 |
+| `/reminders` | 提醒中心 |
+| `/stats` | 统计分析 |
+| `/applications/new` | 新建申请（完整表单） |
+| `/applications/new/quick` | 极简新建 |
+| `/applications/:id` | 申请详情 |
+| `/applications/:id/edit` | 编辑申请 |
+
 ## API 摘要
 
 - `POST /api/auth/register`、`POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/me`
-- `GET|POST /api/applications`、`GET|PUT|DELETE /api/applications/:id`、`PATCH .../status`
+- `GET|POST /api/applications`（支持 `q`、`status`、`sort`、`limit`、`page` 等查询）、`GET|PUT|DELETE /api/applications/:id`、`PATCH .../status`
 - `GET|POST /api/applications/:id/history`
 - `GET /api/reminders`、`PATCH /api/reminders/read`
-- `GET /api/stats/overview|funnel|channels|trends`
+- `GET /api/dashboard/todos` — 今日待办聚合列表
+- `GET /api/stats/overview`、`/funnel`、`/channels`、`/trends`
+- `GET /api/stats/channel-effectiveness` — 按渠道的进面率、Offer 率
+- `GET /api/stats/by-job-category` — 按岗位大类的数量与比率
+- `GET /api/stats/failure-breakdown` — 失败/结束原因标签分布
+
+**Application** 资源除基础字段外，还包括：`writtenTestAt`；`jdSummary`、`companyNotes`、`interviewPrepNotes`、`hrNotes`、`notes`；`resumeVersionLabel`、`materialsLocale`、`resumeTailoredNote`；`jobCategory`、`employmentType`、`failureTag`（枚举在后端 `common/constants` 与前端 `constants` 中校验与展示）。

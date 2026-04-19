@@ -106,6 +106,75 @@ export class StatsService {
     }
     return { weeks };
   }
+
+  /** 各渠道的「进面相关」占比与 Offer 占比（轻量定义：进面 = INTERVIEWING + OFFER） */
+  async channelEffectiveness(userId: string) {
+    const apps = await this.prisma.application.findMany({
+      where: { userId },
+      select: { sourceChannel: true, status: true },
+    });
+    type Agg = { total: number; interviewStage: number; offer: number };
+    const map = new Map<string, Agg>();
+    for (const a of apps) {
+      const ch = a.sourceChannel ?? 'UNKNOWN';
+      const cur = map.get(ch) ?? { total: 0, interviewStage: 0, offer: 0 };
+      cur.total += 1;
+      if (a.status === 'INTERVIEWING' || a.status === 'OFFER') {
+        cur.interviewStage += 1;
+      }
+      if (a.status === 'OFFER') cur.offer += 1;
+      map.set(ch, cur);
+    }
+    return [...map.entries()].map(([channel, v]) => ({
+      channel,
+      total: v.total,
+      interviewRate: v.total ? v.interviewStage / v.total : 0,
+      offerRate: v.total ? v.offer / v.total : 0,
+    }));
+  }
+
+  /** 岗位大类维度数量与比率（未填 category 记为 UNSET） */
+  async byJobCategory(userId: string) {
+    const apps = await this.prisma.application.findMany({
+      where: { userId },
+      select: { jobCategory: true, status: true },
+    });
+    type Agg = { total: number; interviewStage: number; offer: number };
+    const map = new Map<string, Agg>();
+    for (const a of apps) {
+      const key = a.jobCategory ?? 'UNSET';
+      const cur = map.get(key) ?? { total: 0, interviewStage: 0, offer: 0 };
+      cur.total += 1;
+      if (a.status === 'INTERVIEWING' || a.status === 'OFFER') {
+        cur.interviewStage += 1;
+      }
+      if (a.status === 'OFFER') cur.offer += 1;
+      map.set(key, cur);
+    }
+    return [...map.entries()].map(([jobCategory, v]) => ({
+      jobCategory,
+      total: v.total,
+      interviewRate: v.total ? v.interviewStage / v.total : 0,
+      offerRate: v.total ? v.offer / v.total : 0,
+    }));
+  }
+
+  /** 失败/结束原因标签分布（仅统计 failureTag 非空的申请） */
+  async failureBreakdown(userId: string) {
+    const rows = await this.prisma.application.findMany({
+      where: { userId, failureTag: { not: null } },
+      select: { failureTag: true },
+    });
+    const map: Record<string, number> = {};
+    for (const r of rows) {
+      const k = r.failureTag ?? 'OTHER';
+      map[k] = (map[k] ?? 0) + 1;
+    }
+    return Object.entries(map).map(([failureTag, count]) => ({
+      failureTag,
+      count,
+    }));
+  }
 }
 
 function startOfWeekMondayUtc(d: Date): Date {

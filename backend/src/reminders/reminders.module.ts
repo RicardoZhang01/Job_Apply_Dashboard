@@ -7,5 +7,6 @@ import { RemindersService } from './reminders.service';
   imports: [AuthModule],
   controllers: [RemindersController],
   providers: [RemindersService],
+  exports: [RemindersService],
 })
 export class RemindersModule {}

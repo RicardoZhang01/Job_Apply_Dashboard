@@ -27,4 +27,19 @@ export class StatsController {
   trends(@CurrentUser() user: AuthUser) {
     return this.statsService.trends(user.id);
   }
+
+  @Get('channel-effectiveness')
+  channelEffectiveness(@CurrentUser() user: AuthUser) {
+    return this.statsService.channelEffectiveness(user.id);
+  }
+
+  @Get('by-job-category')
+  byJobCategory(@CurrentUser() user: AuthUser) {
+    return this.statsService.byJobCategory(user.id);
+  }
+
+  @Get('failure-breakdown')
+  failureBreakdown(@CurrentUser() user: AuthUser) {
+    return this.statsService.failureBreakdown(user.id);
+  }
 }

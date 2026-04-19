@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ACTIVE_STATUSES, APPLICATION_STATUSES } from '../common/constants';
 import { calendarDaysBetween, startOfDayUtc } from '../lib/date-utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -134,6 +133,10 @@ export class ApplicationsService {
           { companyName: { contains: q } },
           { roleName: { contains: q } },
           { notes: { contains: q } },
+          { jdSummary: { contains: q } },
+          { companyNotes: { contains: q } },
+          { interviewPrepNotes: { contains: q } },
+          { hrNotes: { contains: q } },
         ],
       });
     }
@@ -285,6 +288,9 @@ export class ApplicationsService {
       priority: dto.priority ?? 'MEDIUM',
       deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt) : null,
       appliedAt: dto.appliedAt ? new Date(dto.appliedAt) : null,
+      writtenTestAt: dto.writtenTestAt
+        ? new Date(dto.writtenTestAt)
+        : null,
       nextInterviewAt: dto.nextInterviewAt
         ? new Date(dto.nextInterviewAt)
         : null,
@@ -293,6 +299,16 @@ export class ApplicationsService {
       portfolioSubmitted: dto.portfolioSubmitted ?? false,
       transcriptSubmitted: dto.transcriptSubmitted ?? false,
       notes: dto.notes ?? null,
+      jdSummary: dto.jdSummary ?? null,
+      companyNotes: dto.companyNotes ?? null,
+      interviewPrepNotes: dto.interviewPrepNotes ?? null,
+      hrNotes: dto.hrNotes ?? null,
+      resumeVersionLabel: dto.resumeVersionLabel ?? null,
+      materialsLocale: dto.materialsLocale ?? null,
+      resumeTailoredNote: dto.resumeTailoredNote ?? null,
+      jobCategory: dto.jobCategory ?? null,
+      employmentType: dto.employmentType ?? null,
+      failureTag: dto.failureTag ?? null,
     };
   }
 
@@ -309,6 +325,10 @@ export class ApplicationsService {
       data.deadlineAt = dto.deadlineAt ? new Date(dto.deadlineAt) : null;
     if (dto.appliedAt !== undefined)
       data.appliedAt = dto.appliedAt ? new Date(dto.appliedAt) : null;
+    if (dto.writtenTestAt !== undefined)
+      data.writtenTestAt = dto.writtenTestAt
+        ? new Date(dto.writtenTestAt)
+        : null;
     if (dto.nextInterviewAt !== undefined)
       data.nextInterviewAt = dto.nextInterviewAt
         ? new Date(dto.nextInterviewAt)
@@ -322,6 +342,21 @@ export class ApplicationsService {
     if (dto.transcriptSubmitted !== undefined)
       data.transcriptSubmitted = dto.transcriptSubmitted;
     if (dto.notes !== undefined) data.notes = dto.notes;
+    if (dto.jdSummary !== undefined) data.jdSummary = dto.jdSummary;
+    if (dto.companyNotes !== undefined) data.companyNotes = dto.companyNotes;
+    if (dto.interviewPrepNotes !== undefined)
+      data.interviewPrepNotes = dto.interviewPrepNotes;
+    if (dto.hrNotes !== undefined) data.hrNotes = dto.hrNotes;
+    if (dto.resumeVersionLabel !== undefined)
+      data.resumeVersionLabel = dto.resumeVersionLabel;
+    if (dto.materialsLocale !== undefined)
+      data.materialsLocale = dto.materialsLocale;
+    if (dto.resumeTailoredNote !== undefined)
+      data.resumeTailoredNote = dto.resumeTailoredNote;
+    if (dto.jobCategory !== undefined) data.jobCategory = dto.jobCategory;
+    if (dto.employmentType !== undefined)
+      data.employmentType = dto.employmentType;
+    if (dto.failureTag !== undefined) data.failureTag = dto.failureTag;
     if (dto.status === 'ARCHIVED') {
       data.archivedAt = new Date();
     }
