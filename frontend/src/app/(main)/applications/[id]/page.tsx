@@ -14,7 +14,11 @@ import {
   PRIORITY_LABELS,
   STATUS_LABELS,
 } from "@/lib/constants";
-import type { Application } from "@/lib/types";
+import type {
+  AiInterviewPrepResponse,
+  AiNextActionsResponse,
+  Application,
+} from "@/lib/types";
 import { formatDt } from "@/lib/format";
 import { suggestNextAction } from "@/lib/next-action";
 import {
@@ -28,6 +32,8 @@ export default function ApplicationDetailPage() {
   const id = params.id as string;
   const qc = useQueryClient();
   const [note, setNote] = useState("");
+  const [aiInterviewText, setAiInterviewText] = useState("");
+  const [aiAdviceInfo, setAiAdviceInfo] = useState<string | null>(null);
 
   const { data: app, isLoading } = useQuery({
     queryKey: ["application", id],
@@ -58,6 +64,98 @@ export default function ApplicationDetailPage() {
       void qc.invalidateQueries({ queryKey: ["stats"] });
       void qc.invalidateQueries({ queryKey: ["dashboard", "todos"] });
       router.push("/list");
+    },
+  });
+
+  const aiNextActions = useMutation({
+    mutationFn: () =>
+      api<AiNextActionsResponse>("/ai/next-actions", {
+        method: "POST",
+        body: JSON.stringify({ applicationId: id }),
+      }),
+    onMutate: () => {
+      setAiAdviceInfo(null);
+    },
+    onSuccess: (res) => {
+      if (!res.available) {
+        setAiAdviceInfo(res.reason ?? "AI 当前不可用，请稍后重试。");
+      }
+    },
+    onError: (e: Error) => {
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7289/ingest/ff4ba58b-9540-4559-bb1d-ce8a23537215",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "a9e5a9",
+          },
+          body: JSON.stringify({
+            sessionId: "a9e5a9",
+            location: "applications/[id]/page.tsx:aiNextActions",
+            message: "ai next actions error",
+            data: { err: e.message, applicationId: id },
+            timestamp: Date.now(),
+            hypothesisId: "H-AI-CALL",
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      setAiAdviceInfo(e.message || "AI 当前不可用，请稍后重试。");
+    },
+  });
+
+  const aiInterviewPrep = useMutation({
+    mutationFn: () =>
+      api<AiInterviewPrepResponse>("/ai/interview-prep", {
+        method: "POST",
+        body: JSON.stringify({ applicationId: id }),
+      }),
+    onMutate: () => {
+      setAiAdviceInfo(null);
+      setAiInterviewText("");
+    },
+    onSuccess: (res) => {
+      if (!res.available) {
+        setAiAdviceInfo(res.reason ?? "AI 当前不可用，请稍后重试。");
+        return;
+      }
+      const text = [
+        "AI 面试准备建议",
+        "",
+        "准备清单：",
+        ...res.checklist.map((i, idx) => `${idx + 1}. ${i}`),
+        "",
+        "建议问题：",
+        ...res.questions.map((q, idx) => `${idx + 1}. ${q}`),
+        "",
+        `自我介绍提示：${res.introHint}`,
+      ].join("\n");
+      setAiInterviewText(text);
+    },
+    onError: (e: Error) => {
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7289/ingest/ff4ba58b-9540-4559-bb1d-ce8a23537215",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "a9e5a9",
+          },
+          body: JSON.stringify({
+            sessionId: "a9e5a9",
+            location: "applications/[id]/page.tsx:aiInterviewPrep",
+            message: "ai interview prep error",
+            data: { err: e.message, applicationId: id },
+            timestamp: Date.now(),
+            hypothesisId: "H-AI-CALL",
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      setAiAdviceInfo(e.message || "AI 当前不可用，请稍后重试。");
     },
   });
 
@@ -94,6 +192,41 @@ export default function ApplicationDetailPage() {
       <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
         <span className="font-semibold text-indigo-800">下一步建议：</span>
         {suggestNextAction(app)}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-xs text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+            disabled={aiNextActions.isPending}
+            onClick={() => aiNextActions.mutate()}
+          >
+            {aiNextActions.isPending ? "生成中…" : "AI 生成行动建议"}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-xs text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+            disabled={aiInterviewPrep.isPending}
+            onClick={() => aiInterviewPrep.mutate()}
+          >
+            {aiInterviewPrep.isPending ? "生成中…" : "AI 生成面试准备"}
+          </button>
+        </div>
+        {aiAdviceInfo && (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
+            {aiAdviceInfo}
+          </div>
+        )}
+        {aiNextActions.data?.available && (
+          <div className="mt-3 rounded-lg border border-indigo-100 bg-white p-3 text-xs text-slate-700">
+            <div className="font-semibold text-indigo-700">
+              AI 优先级：{aiNextActions.data.priorityLabel}
+            </div>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              {aiNextActions.data.top3Actions.map((a, idx) => (
+                <li key={`${a}-${idx}`}>{a}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <section className="grid gap-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2">
@@ -229,6 +362,15 @@ export default function ApplicationDetailPage() {
       </section>
 
       <ApplicationTimeline app={app} history={history} />
+
+      {aiInterviewText && (
+        <section className="rounded-xl border border-indigo-100 bg-white p-6 shadow-sm">
+          <h2 className="font-semibold text-slate-900">AI 面试准备建议</h2>
+          <pre className="mt-3 whitespace-pre-wrap text-sm text-slate-700">
+            {aiInterviewText}
+          </pre>
+        </section>
+      )}
 
       {(app.jdSummary ||
         app.companyNotes ||

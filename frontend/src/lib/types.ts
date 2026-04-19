@@ -67,3 +67,57 @@ export type ReminderItem = {
     status: string;
   };
 };
+
+export type AiJdExtractResponse = {
+  available: boolean;
+  reason?: string;
+  companyName: string | null;
+  roleName: string | null;
+  location: string | null;
+  jdSummary: string;
+  keywords: string[];
+  materialHints: string[];
+  reasons: string[];
+};
+
+export type AiNextActionsResponse = {
+  available: boolean;
+  reason?: string;
+  priorityLabel: "HIGH" | "MEDIUM" | "LOW";
+  top3Actions: string[];
+  reasons: string[];
+};
+
+export type AiResumeSuggestResponse = {
+  available: boolean;
+  reason?: string;
+  suggestions: string[];
+  coverLetterDraft: string;
+  reasons: string[];
+};
+
+export type AiInterviewPrepResponse = {
+  available: boolean;
+  reason?: string;
+  checklist: string[];
+  questions: string[];
+  introHint: string;
+  reasons: string[];
+};
+
+export type AiStatsInsightResponse = {
+  available: boolean;
+  reason?: string;
+  headline: string;
+  insights: string[];
+  actions: string[];
+  reasons: string[];
+};
+
+export type AiDashboardDigestResponse = {
+  available: boolean;
+  reason?: string;
+  headline: string;
+  bullets: string[];
+  reasons: string[];
+};

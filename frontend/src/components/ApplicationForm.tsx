@@ -19,7 +19,7 @@ import {
   SOURCE_CHANNELS,
   STATUS_LABELS,
 } from "@/lib/constants";
-import type { Application } from "@/lib/types";
+import type { AiJdExtractResponse, AiResumeSuggestResponse, Application } from "@/lib/types";
 
 type Props = {
   mode: "create" | "edit";
@@ -31,7 +31,6 @@ type Props = {
 export function ApplicationForm({ mode, initial, compact }: Props) {
   const router = useRouter();
   const qc = useQueryClient();
-  /** 编辑已有申请时默认展开高级字段（含失败原因、材料版本、岗位大类等），避免误以为只能新建时填写 */
   const [advanced, setAdvanced] = useState(
     () => mode === "edit" && !compact,
   );
@@ -90,6 +89,7 @@ export function ApplicationForm({ mode, initial, compact }: Props) {
     initial?.employmentType ?? "",
   );
   const [failureTag, setFailureTag] = useState(initial?.failureTag ?? "");
+  const [jdRawInput, setJdRawInput] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const save = useMutation({
@@ -143,6 +143,60 @@ export function ApplicationForm({ mode, initial, compact }: Props) {
       void qc.invalidateQueries({ queryKey: ["reminders"] });
       void qc.invalidateQueries({ queryKey: ["dashboard", "todos"] });
       router.push(`/applications/${app.id}`);
+    },
+    onError: (e: Error) => setErr(e.message),
+  });
+
+  const aiJdExtract = useMutation({
+    mutationFn: () =>
+      api<AiJdExtractResponse>("/ai/jd-extract", {
+        method: "POST",
+        body: JSON.stringify({
+          jobUrl: jobUrl || undefined,
+          rawText: jdRawInput || undefined,
+        }),
+      }),
+    onSuccess: (res) => {
+      if (!res.available) {
+        setErr(res.reason ?? "AI 当前不可用，请稍后再试");
+        return;
+      }
+      if (res.companyName) setCompanyName(res.companyName);
+      if (res.roleName) setRoleName(res.roleName);
+      if (res.location) setLocation(res.location);
+      if (res.jdSummary) setJdSummary(res.jdSummary);
+      if (res.keywords?.length) {
+        setCompanyNotes((prev) =>
+          [prev, `关键词：${res.keywords.join("、")}`].filter(Boolean).join("\n"),
+        );
+      }
+      if (res.materialHints?.length) {
+        setHrNotes((prev) =>
+          [prev, `材料提示：${res.materialHints.join("；")}`]
+            .filter(Boolean)
+            .join("\n"),
+        );
+      }
+    },
+    onError: (e: Error) => setErr(e.message),
+  });
+
+  const aiResumeSuggest = useMutation({
+    mutationFn: () =>
+      api<AiResumeSuggestResponse>("/ai/resume-suggest", {
+        method: "POST",
+        body: JSON.stringify({ applicationId: initial?.id }),
+      }),
+    onSuccess: (res) => {
+      if (!res.available) {
+        setErr(res.reason ?? "AI 当前不可用，请稍后再试");
+        return;
+      }
+      setResumeTailoredNote((prev) =>
+        [prev, "AI 简历建议：", ...res.suggestions, "", "求职信草稿：", res.coverLetterDraft]
+          .filter(Boolean)
+          .join("\n"),
+      );
     },
     onError: (e: Error) => setErr(e.message),
   });
@@ -273,6 +327,26 @@ export function ApplicationForm({ mode, initial, compact }: Props) {
               value={jobUrl}
               onChange={(e) => setJobUrl(e.target.value)}
             />
+            <p className="mt-1 text-xs text-slate-500">
+              可粘贴 JD 文本并使用 AI 自动提取关键信息。
+            </p>
+            <textarea
+              rows={3}
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+              value={jdRawInput}
+              onChange={(e) => setJdRawInput(e.target.value)}
+              placeholder="粘贴 JD 文本（可选）"
+            />
+            <button
+              type="button"
+              className="mt-2 rounded-md border border-indigo-200 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+              disabled={
+                aiJdExtract.isPending || (!jobUrl.trim() && !jdRawInput.trim())
+              }
+              onClick={() => aiJdExtract.mutate()}
+            >
+              {aiJdExtract.isPending ? "AI 解析中…" : "AI 解析 JD 并回填"}
+            </button>
           </div>
           <div>
             <label className="text-sm text-slate-600">截止日期</label>
@@ -388,6 +462,20 @@ export function ApplicationForm({ mode, initial, compact }: Props) {
               </div>
             </div>
           </div>
+          {mode === "edit" && !!initial?.id && (
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                className="rounded-md border border-indigo-200 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+                disabled={aiResumeSuggest.isPending}
+                onClick={() => aiResumeSuggest.mutate()}
+              >
+                {aiResumeSuggest.isPending
+                  ? "AI 生成中…"
+                  : "AI 生成简历/求职信建议（写入定制说明）"}
+              </button>
+            </div>
+          )}
           <div className="sm:col-span-2 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
             <div>
               <label className="text-sm text-slate-600">岗位大类（复盘）</label>

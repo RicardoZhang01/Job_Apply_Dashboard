@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -23,6 +24,7 @@ import {
   JOB_CATEGORY_LABELS,
   STATUS_LABELS,
 } from "@/lib/constants";
+import type { AiStatsInsightResponse } from "@/lib/types";
 
 const COLORS = [
   "#6366f1",
@@ -35,6 +37,52 @@ const COLORS = [
 ];
 
 export default function StatsPage() {
+  const [aiInsightData, setAiInsightData] = useState<AiStatsInsightResponse | null>(
+    null,
+  );
+  const [aiInsightInfo, setAiInsightInfo] = useState<string | null>(null);
+  const aiInsight = useMutation({
+    mutationFn: () =>
+      api<AiStatsInsightResponse>("/ai/stats-insight", {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    onMutate: () => {
+      setAiInsightData(null);
+      setAiInsightInfo(null);
+    },
+    onSuccess: (res) => {
+      if (!res.available) {
+        setAiInsightInfo(res.reason ?? "AI 当前不可用，请稍后重试。");
+        return;
+      }
+      setAiInsightData(res);
+    },
+    onError: (e: Error) => {
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7289/ingest/ff4ba58b-9540-4559-bb1d-ce8a23537215",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "a9e5a9",
+          },
+          body: JSON.stringify({
+            sessionId: "a9e5a9",
+            location: "stats/page.tsx:aiInsight",
+            message: "ai stats insight error",
+            data: { err: e.message },
+            timestamp: Date.now(),
+            hypothesisId: "H-AI-CALL",
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      setAiInsightInfo(e.message || "AI 当前不可用，请稍后重试。");
+    },
+  });
+
   const { data: overview } = useQuery({
     queryKey: ["stats", "overview"],
     queryFn: () => api<{ byStatus: Record<string, number> }>("/stats/overview"),
@@ -110,6 +158,33 @@ export default function StatsPage() {
         <p className="mt-1 text-slate-600">
           渠道、漏斗与投递趋势；「进面率」按进入面试中或 Offer 的申请占比估算。
         </p>
+        <div className="mt-3">
+          <button
+            type="button"
+            className="rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+            disabled={aiInsight.isPending}
+            onClick={() => aiInsight.mutate()}
+          >
+            {aiInsight.isPending ? "AI 解读生成中…" : "AI 解读本页统计"}
+          </button>
+        </div>
+        {aiInsightInfo && (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            {aiInsightInfo}
+          </div>
+        )}
+        {aiInsightData && (
+          <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-slate-800">
+            <div className="font-semibold text-indigo-800">
+              {aiInsightData.headline}
+            </div>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {aiInsightData.insights.map((i, idx) => (
+                <li key={`${idx}-${i}`}>{i}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <section>

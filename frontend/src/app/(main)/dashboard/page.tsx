@@ -2,11 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { groupRemindersByCategory } from "@/lib/reminder-groups";
 import type {
   Application,
+  AiDashboardDigestResponse,
   DashboardTodoItem,
   OverviewStats,
   ReminderItem,
@@ -84,6 +85,7 @@ function ReminderListItem({
 }
 
 export default function DashboardPage() {
+  const [digestInfo, setDigestInfo] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data: overview } = useQuery({
     queryKey: ["stats", "overview"],
@@ -106,6 +108,41 @@ export default function DashboardPage() {
       api<{ items: Application[] }>(
         "/applications?limit=5&sort=updated_at:desc",
       ),
+  });
+
+  const aiDigest = useMutation({
+    mutationFn: () => api<AiDashboardDigestResponse>("/ai/dashboard-digest"),
+    onMutate: () => {
+      setDigestInfo(null);
+    },
+    onSuccess: (res) => {
+      if (!res.available) {
+        setDigestInfo(res.reason ?? "AI 当前不可用，请稍后重试。");
+      }
+    },
+    onError: (e: Error) => {
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7289/ingest/ff4ba58b-9540-4559-bb1d-ce8a23537215",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "a9e5a9",
+          },
+          body: JSON.stringify({
+            sessionId: "a9e5a9",
+            location: "dashboard/page.tsx:aiDigest",
+            message: "ai dashboard digest error",
+            data: { err: e.message },
+            timestamp: Date.now(),
+            hypothesisId: "H-AI-CALL",
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      setDigestInfo(e.message || "AI 当前不可用，请稍后重试。");
+    },
   });
 
   const groupedReminders = useMemo(
@@ -135,6 +172,40 @@ export default function DashboardPage() {
           总览申请进度与近期提醒（数据来自后端实时计算）
         </p>
       </div>
+
+      <section className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-indigo-900">AI 今日简报</h2>
+          <button
+            type="button"
+            className="rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+            disabled={aiDigest.isPending}
+            onClick={() => aiDigest.mutate()}
+          >
+            {aiDigest.isPending ? "生成中…" : "生成 AI 今日简报"}
+          </button>
+        </div>
+        {!aiDigest.data && (
+          <p className="mt-2 text-sm text-slate-600">
+            默认不主动调用 AI。点击按钮后才会请求 AI 接口。
+          </p>
+        )}
+        {digestInfo && (
+          <p className="mt-2 text-sm text-slate-700">{digestInfo}</p>
+        )}
+        {aiDigest.data?.available && (
+          <div className="mt-3">
+          <p className="mt-1 text-sm font-medium text-indigo-800">
+            {aiDigest.data.headline}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            {aiDigest.data.bullets.map((b, idx) => (
+              <li key={`${idx}-${b}`}>{b}</li>
+            ))}
+          </ul>
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">今日待办</h2>
