@@ -1,152 +1,206 @@
-# 求职申请管理看板
+# 求职申请管理看板 (Job Apply Dashboard)
 
-面向大学生求职场景的 Web 平台：看板拖拽、列表筛选、截止日期与面试提醒、统计分析。
+English version: [README.en.md](README.en.md)
 
-## 特色功能
+面向大学生/应届生求职场景的申请管理平台，提供从岗位收集、投递推进到复盘分析的完整闭环，并在关键流程中内嵌 AI 能力。
 
-- **一体化流程管理**：从“快速建档 → 状态推进 → 面试准备 → 复盘分析”完整闭环，不是单纯记录工具。
-- **可执行导向首页**：仪表盘聚合“今日待办 + 分组提醒 + 最近更新”，帮助用户每天知道先做什么。
-- **结构化申请资产**：不仅记录状态，还沉淀 JD 摘要、面试准备、材料版本、失败原因等可复用信息。
-- **AI 内嵌而非外挂**：AI 直接嵌入表单、详情、统计与仪表盘，围绕真实动作点提供建议，而不是单独聊天框。
-- **安全与可控**：AI 调用仅在用户触发时发生；未配置 API Key 时返回友好原因，不影响手工流程。
+## 目录
 
-## AI 特色能力
+- [项目简介](#项目简介)
+- [核心特性](#核心特性)
+- [技术栈](#技术栈)
+- [项目结构](#项目结构)
+- [快速开始](#快速开始)
+- [环境变量](#环境变量)
+- [常用脚本](#常用脚本)
+- [页面路由](#页面路由)
+- [API 概览](#api-概览)
+- [AI 功能说明](#ai-功能说明)
+- [演示路径](#演示路径)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
 
-- **AI 解析 JD 并回填申请**：降低录入成本，提升建档效率。
-- **AI 申请行动建议**：按申请上下文给出优先级和下一步动作。
-- **AI 面试准备建议**：生成准备清单、问题方向与表达提示。
-- **AI 简历/求职信建议**：在编辑流程中直接沉淀到申请字段。
-- **AI 统计解读与今日简报**：把数据图表转成可执行结论，辅助策略调整。
+## 项目简介
 
-**当前能力摘要**
+相比“仅记录状态”的看板工具，本项目强调：
 
-- **总览**：关键指标、**今日待办**（截止/今日笔面试/材料与跟进等聚合）、**分组提醒**、最近更新、快捷入口；**提醒中心** [`/reminders`](frontend/src/app/(main)/reminders/page.tsx)。
-- **执行**：看板 **搜索/筛选**、卡片 **材料 x/4** 与 **规则化「下一步」** 提示；**极简新建** [`/applications/new/quick`](frontend/src/app/(main)/applications/new/quick/page.tsx) 与完整新建；申请详情含 **申请时间线**（关键日期 + 历史记录）。
-- **字段**：笔试时间；结构化备注（JD / 公司 / 面试准备 / HR / 自由备注）；材料轻量版本（简历版本名、语言侧重、定制说明）；复盘维度（岗位大类、招聘类型、结束/失败原因标签）。
-- **复盘**：统计分析含渠道分布、**渠道进面/Offer 率**、**岗位大类复盘**、**失败原因分布**、漏斗与趋势等。
-- **AI 赋能（内嵌式）**：
-  - 表单支持 **AI 解析 JD 并回填**（公司/岗位/地点/JD 摘要/关键词提示）
-  - 详情页支持 **AI 行动建议** 与 **AI 面试准备建议**
-  - 表单编辑态支持 **AI 简历/求职信建议**（写入定制说明）
-  - 仪表盘支持 **AI 今日简报**，统计页支持 **AI 解读本页统计**
+- **可执行导向**：首页直接给到今日待办、提醒与优先动作
+- **结构化沉淀**：将 JD、面试准备、材料版本、失败原因变成可复用资产
+- **数据复盘闭环**：从渠道/阶段统计走向策略建议
+- **AI 内嵌式体验**：在表单、详情、统计、仪表盘等真实操作点提供辅助
 
+## 核心特性
 
-## 一键启动（推荐）
+### 1) 流程管理
 
-**需要先安装 [Node.js](https://nodejs.org/)（建议 LTS）。**
+- 看板拖拽推进申请状态
+- 列表检索与多维筛选
+- 截止日期、笔试、面试等关键节点管理
+- 申请时间线与历史记录追踪
 
-| 方式 | 说明 |
-|------|------|
-| **Windows** | 双击项目根目录下的 [`start.bat`](start.bat)：会自动安装依赖、复制环境变量文件、迁移数据库并同时启动后端与前端。 |
-| **Mac / Linux** | 在项目根目录执行：`chmod +x start.sh && ./start.sh` |
-| **命令行（等价于脚本）** | 在项目根目录：`npm install && npm run install:all && npm run setup && npm run dev` |
+### 2) 决策辅助
 
-启动成功后：
+- 首页“今日待办”聚合（截止、面试、材料、停滞等）
+- 规则化“下一步建议”
+- 提醒中心分组展示并支持已读管理
 
-- 前端：**http://localhost:3000**
-- 后端 API：**http://localhost:3001/api**
+### 3) 复盘分析
 
-浏览器打开首页后 **注册账号** 即可使用。
+- 状态分布、漏斗、趋势
+- 渠道进面率 / Offer 率
+- 岗位大类分析与失败原因分布
 
-> **说明**：环境文件若不存在，会从 `backend/.env.example`、`frontend/.env.local.example` 自动复制（无需再手动执行 `cp` / `Copy-Item`）。
+### 4) AI 赋能（按需触发）
 
----
+- JD 解析并回填申请字段
+- 申请级行动建议
+- 面试准备建议
+- 简历/求职信建议
+- 统计解读与仪表盘今日简报
 
-## 结构
+## 技术栈
 
-| 目录 | 说明 |
-|------|------|
-| [backend/](backend/) | NestJS + Prisma（SQLite 本地默认）REST API，`/api` 前缀 |
-| [frontend/](frontend/) | Next.js 14 App Router + Tailwind + React Query + dnd-kit |
-| [docs/TECH_DECISIONS.md](docs/TECH_DECISIONS.md) | MVP 技术决策与口径 |
+- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS, TanStack Query, dnd-kit, Recharts
+- **Backend**: NestJS, Prisma
+- **Database**: SQLite（默认本地）
+- **Auth**: JWT + HttpOnly Cookie
+- **CI**: GitHub Actions（`.github/workflows/ci.yml`）
 
-## 根目录脚本
-
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | 同时启动后端（watch）与前端 dev（需已安装各目录依赖并完成 `npm run setup`） |
-| `npm run setup` | 复制 env + 执行数据库迁移与 `prisma generate` |
-| `npm run env:copy` | 仅从示例复制 `.env` / `.env.local` |
-
-## 环境变量
-
-不复制示例也可自行新建：
-
-- 后端：`DATABASE_URL`、`JWT_SECRET`、`FRONTEND_ORIGIN`（默认 `http://localhost:3000`）、`PORT`（默认 `3001`）
-- AI（后端可选启用）：`OPENAI_API_KEY`、`OPENAI_BASE_URL`（默认 `https://api.openai.com/v1`）、`OPENAI_MODEL`（默认 `gpt-4o-mini`）
-- 前端：`NEXT_PUBLIC_API_URL`（默认 `http://localhost:3001`）
-
-## 子项目脚本
-
-| 命令 | 说明 |
-|------|------|
-| 在 `backend/`：`npm run build` | 编译后端 |
-| 在 `backend/`：`npm test` | 单元测试 |
-| 在 `backend/`：`npm run test:e2e` | E2E |
-| 在 `frontend/`：`npm run build` | 前端生产构建 |
-
-## CI
-
-推送至 `main/master` 或提交 PR 时运行 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)。
-
-## 主要页面路由（前端）
+## 项目结构
 
 | 路径 | 说明 |
 |------|------|
-| `/` | 登录态检测后跳转仪表盘或登录页 |
+| [backend/](backend/) | NestJS + Prisma REST API（`/api` 前缀） |
+| [frontend/](frontend/) | Next.js 前端应用 |
+| [docs/TECH_DECISIONS.md](docs/TECH_DECISIONS.md) | 技术决策记录 |
+
+## 快速开始
+
+### 方式 A：脚本一键启动（推荐）
+
+- **Windows**：双击 [`start.bat`](start.bat)
+- **Mac / Linux**：`chmod +x start.sh && ./start.sh`
+
+### 方式 B：命令行
+
+```bash
+npm install
+npm run install:all
+npm run setup
+npm run dev
+```
+
+启动后：
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:3001/api`
+
+首次使用请注册账号登录。
+
+## 环境变量
+
+> 环境文件不存在时，可由 `npm run setup` 从示例自动复制。
+
+### Backend (`backend/.env`)
+
+| 变量 | 说明 | 默认 |
+|------|------|------|
+| `DATABASE_URL` | SQLite 连接串 | `file:./dev.db` |
+| `JWT_SECRET` | JWT 密钥 | - |
+| `FRONTEND_ORIGIN` | CORS 允许来源 | `http://localhost:3000` |
+| `PORT` | 后端端口 | `3001` |
+| `OPENAI_API_KEY` | AI key（可选） | 空 |
+| `OPENAI_BASE_URL` | OpenAI 兼容地址 | `https://api.openai.com/v1` |
+| `OPENAI_MODEL` | 模型名 | `gpt-4o-mini` |
+
+### Frontend (`frontend/.env.local`)
+
+| 变量 | 说明 | 默认 |
+|------|------|------|
+| `NEXT_PUBLIC_API_URL` | 后端基地址 | `http://localhost:3001` |
+
+## 常用脚本
+
+### 根目录
+
+| 命令 | 说明 |
+|------|------|
+| `npm run dev` | 同时启动前后端开发服务 |
+| `npm run setup` | 复制 env、执行迁移、生成 Prisma Client |
+| `npm run env:copy` | 仅复制环境文件 |
+
+### 子项目
+
+| 命令 | 说明 |
+|------|------|
+| `backend: npm run build` | 编译后端 |
+| `backend: npm test` | 单元测试 |
+| `backend: npm run test:e2e` | E2E 测试 |
+| `frontend: npm run build` | 前端生产构建 |
+
+## 页面路由
+
+| 路径 | 说明 |
+|------|------|
+| `/` | 登录态检测后跳转 |
 | `/dashboard` | 首页仪表盘 |
 | `/board` | 看板 |
 | `/list` | 申请列表 |
 | `/reminders` | 提醒中心 |
 | `/stats` | 统计分析 |
-| `/applications/new` | 新建申请（完整表单） |
+| `/applications/new` | 完整新建 |
 | `/applications/new/quick` | 极简新建 |
 | `/applications/:id` | 申请详情 |
 | `/applications/:id/edit` | 编辑申请 |
 
-## API 摘要
+## API 概览
 
-- `POST /api/auth/register`、`POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/me`
-- `GET|POST /api/applications`（支持 `q`、`status`、`sort`、`limit`、`page` 等查询）、`GET|PUT|DELETE /api/applications/:id`、`PATCH .../status`
+- `POST /api/auth/register|login|logout`
+- `GET /api/auth/me`
+- `GET|POST /api/applications`
+- `GET|PUT|DELETE /api/applications/:id`
+- `PATCH /api/applications/:id/status`
 - `GET|POST /api/applications/:id/history`
-- `GET /api/reminders`、`PATCH /api/reminders/read`
-- `GET /api/dashboard/todos` — 今日待办聚合列表
-- `GET /api/stats/overview`、`/funnel`、`/channels`、`/trends`
-- `GET /api/stats/channel-effectiveness` — 按渠道的进面率、Offer 率
-- `GET /api/stats/by-job-category` — 按岗位大类的数量与比率
-- `GET /api/stats/failure-breakdown` — 失败/结束原因标签分布
-- `POST /api/ai/jd-extract` — JD 解析与字段回填建议
-- `POST /api/ai/next-actions` — 申请级 AI 行动建议
-- `POST /api/ai/resume-suggest` — 简历/求职信建议
-- `POST /api/ai/interview-prep` — 面试准备建议
-- `POST /api/ai/stats-insight` — 统计页 AI 解读
-- `GET /api/ai/dashboard-digest` — 仪表盘 AI 今日简报
+- `GET /api/reminders`
+- `PATCH /api/reminders/read`
+- `GET /api/dashboard/todos`
+- `GET /api/stats/overview|funnel|channels|trends`
+- `GET /api/stats/channel-effectiveness|by-job-category|failure-breakdown`
+- `POST /api/ai/jd-extract|next-actions|resume-suggest|interview-prep|stats-insight`
+- `GET /api/ai/dashboard-digest`
 
-**Application** 资源除基础字段外，还包括：`writtenTestAt`；`jdSummary`、`companyNotes`、`interviewPrepNotes`、`hrNotes`、`notes`；`resumeVersionLabel`、`materialsLocale`、`resumeTailoredNote`；`jobCategory`、`employmentType`、`failureTag`（枚举在后端 `common/constants` 与前端 `constants` 中校验与展示）。
+## AI 功能说明
 
-## AI 说明（当前版本）
+- AI 调用通过后端进行（不在前端暴露 Key）
+- 默认**按需触发**，只有用户点击按钮才发起 AI 请求
+- 输出定位为“建议 + 原因”，不自动修改关键业务状态
+- 当 AI 不可用时，返回温和原因提示，不阻断手工流程
 
-- 当前 AI Provider 为 **OpenAI 兼容调用**（通过后端读取 API Key）。
-- 输出定位为“**建议 + 可解释原因**”，默认不自动改状态或关键时间节点。
-- 默认不主动触发 AI 请求：仅在用户点击对应按钮时才调用（例如仪表盘“生成 AI 今日简报”）。
-- 若未配置 `OPENAI_API_KEY`，调用 AI 接口会返回缺少 key 的错误；不再使用本地启发式兜底。
+## 演示路径
 
-## AI 功能演示路径（点击顺序）
+推荐 3-5 分钟演示顺序：
 
-建议用以下顺序演示，3-5 分钟可完整覆盖核心价值：
+1. `/applications/new/quick`：AI 解析 JD 并回填
+2. `/applications/:id`：AI 行动建议 + AI 面试准备
+3. `/dashboard`：生成 AI 今日简报
+4. `/stats`：AI 解读本页统计
+5. `/applications/:id/edit`：AI 简历/求职信建议写入字段
 
-1. 进入 `/applications/new/quick`
-   - 粘贴岗位链接或 JD 文本，点击「AI 解析 JD 并回填」
-   - 展示公司/岗位/JD 摘要等字段被自动回填
-2. 保存申请后进入 `/applications/:id`
-   - 点击「AI 生成行动建议」
-   - 点击「AI 生成面试准备」
-   - 展示可解释的建议结果与面试准备清单
-3. 进入 `/dashboard`
-   - 展示「AI 今日简报」与「今日待办」的一致性
-4. 进入 `/stats`
-   - 点击「AI 解读本页统计」
-   - 展示从图表数据到结论建议的转化
-5. 返回 `/applications/:id/edit`
-   - 点击「AI 生成简历/求职信建议（写入定制说明）」
-   - 展示建议可直接落到现有申请字段中
+## Roadmap
+
+- [ ] 持久化 AI artifact（幂等缓存、可追溯）
+- [ ] 更细粒度的 AI 成本与限流治理
+- [ ] 更丰富的策略复盘（阶段性报告导出）
+- [ ] 对话式 AI 教练（后置增强）
+
+## Contributing
+
+欢迎提 Issue / PR。建议流程：
+
+1. Fork 并新建分支
+2. 提交改动并附上测试/截图
+3. 发起 PR，说明变更目的与影响范围
+
+---
+
+如果这个项目对你有帮助，欢迎 Star。
