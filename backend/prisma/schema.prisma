@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite: store enums as strings; validate in DTOs (see constants)
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  applications Application[]
+  reminders    Reminder[]
+
+  @@map("users")
+}
+
+model Application {
+  id                   String    @id @default(uuid())
+  userId               String      @map("user_id")
+  companyName          String      @map("company_name")
+  roleName             String      @map("role_name")
+  location             String?
+  sourceChannel        String?     @map("source_channel")
+  jobUrl               String?     @map("job_url")
+  status               String
+  priority             String      @default("MEDIUM")
+  deadlineAt           DateTime?   @map("deadline_at")
+  appliedAt            DateTime?   @map("applied_at")
+  nextInterviewAt      DateTime?   @map("next_interview_at")
+  resumeSubmitted      Boolean     @default(false) @map("resume_submitted")
+  coverLetterSubmitted Boolean     @default(false) @map("cover_letter_submitted")
+  portfolioSubmitted   Boolean     @default(false) @map("portfolio_submitted")
+  transcriptSubmitted  Boolean     @default(false) @map("transcript_submitted")
+  notes                String?
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
+  archivedAt           DateTime?   @map("archived_at")
+
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history   ApplicationHistory[]
+  reminders Reminder[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("applications")
+}
+
+model ApplicationHistory {
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  fromStatus    String?  @map("from_status")
+  toStatus      String?  @map("to_status")
+  actionType    String   @map("action_type")
+  content       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("application_history")
+}
+
+model Reminder {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  applicationId String   @map("application_id")
+  reminderKey   String   @map("reminder_key")
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reminderKey])
+  @@map("reminders")
+}
